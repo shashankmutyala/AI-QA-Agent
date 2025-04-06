@@ -150,4 +150,12 @@ Yes! It can be easily deployed using Docker, or on platforms like Hugging Face S
 
 If you found this useful, don’t forget to ⭐ the repo and share it with others!
 
+## 🌟 Demo for This Project
+
+
+
+
+https://github.com/user-attachments/assets/a08cc205-1c5a-4c87-bbfd-b260c9a3fffc
+
+
 ---
