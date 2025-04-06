@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Website Q&A Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .source-link {
+            margin-right: 10px;
+        }
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+        #answerCard {
+            display: none;
+        }
+        #crawlStatus {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 text-center">Help Website Q&A Agent</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Crawl & Index Website
+                    </div>
+                    <div class="card-body">
+                        <form id="crawlForm">
+                            <div class="mb-3">
+                                <label for="websiteUrl" class="form-label">Website URL</label>
+                                <input type="url" class="form-control" id="websiteUrl" placeholder="https://example.com" required>
+                                <div class="form-text">Try a small documentation website for faster indexing.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="crawlButton">
+                                <span class="spinner-border d-none" id="crawlSpinner" role="status" aria-hidden="true"></span>
+                                Crawl & Index
+                            </button>
+                        </form>
+
+                        <div class="alert mt-3" id="crawlStatus" role="alert"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Ask Questions
+                    </div>
+                    <div class="card-body">
+                        <form id="queryForm">
+                            <div class="mb-3">
+                                <label for="domain" class="form-label">Website Domain</label>
+                                <input type="text" class="form-control" id="domain" placeholder="example.com" required>
+                                <div class="form-text">Enter the domain you've crawled.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="question" class="form-label">Question</label>
+                                <input type="text" class="form-control" id="question" placeholder="How do I..." required>
+                            </div>
+                            <button type="submit" class="btn btn-success" id="queryButton">
+                                <span class="spinner-border d-none" id="querySpinner" role="status" aria-hidden="true"></span>
+                                Ask Question
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4" id="answerCard">
+            <div class="card-header">
+                Answer
+            </div>
+            <div class="card-body">
+                <h5 class="card-title" id="questionText"></h5>
+                <p class="card-text" id="answerText"></p>
+
+                <div id="sourcesSection">
+                    <h6>Sources:</h6>
+                    <ul id="sourcesList" class="list-unstyled"></ul>
+                </div>
+
+                <div class="text-muted mt-2">
+                    <small>Confidence: <span id="confidenceScore"></span></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('crawlForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const url = document.getElementById('websiteUrl').value;
+            const button = document.getElementById('crawlButton');
+            const spinner = document.getElementById('crawlSpinner');
+            const status = document.getElementById('crawlStatus');
+
+            // Disable button and show spinner
+            button.disabled = true;
+            spinner.classList.remove('d-none');
+            status.classList.remove('alert-success', 'alert-danger');
+            status.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('url', url);
+
+                const response = await fetch('/crawl', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                status.style.display = 'block';
+                if (result.status === 'success') {
+                    status.classList.add('alert-success');
+                    status.textContent = result.message;
+
+                    // Auto-fill the domain field
+                    document.getElementById('domain').value = result.domain;
+                } else {
+                    status.classList.add('alert-danger');
+                    status.textContent = result.message;
+                }
+            } catch (error) {
+                status.style.display = 'block';
+                status.classList.add('alert-danger');
+                status.textContent = 'Error: ' + error.message;
+            } finally {
+                // Re-enable button and hide spinner
+                button.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('queryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const domain = document.getElementById('domain').value;
+            const question = document.getElementById('question').value;
+            const button = document.getElementById('queryButton');
+            const spinner = document.getElementById('querySpinner');
+            const answerCard = document.getElementById('answerCard');
+
+            // Disable button and show spinner
+            button.disabled = true;
+            spinner.classList.remove('d-none');
+            answerCard.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('domain', domain);
+                formData.append('question', question);
+
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // Display the answer
+                    document.getElementById('questionText').textContent = question;
+                    document.getElementById('answerText').textContent = result.answer;
+                    document.getElementById('confidenceScore').textContent = result.confidence;
+
+                    // Clear previous sources
+                    const sourcesList = document.getElementById('sourcesList');
+                    sourcesList.innerHTML = '';
+
+                    // Add sources
+                    if (result.sources && result.sources.length > 0) {
+                        result.sources.forEach(source => {
+                            const li = document.createElement('li');
+                            const link = document.createElement('a');
+                            link.href = source.url;
+                            link.target = '_blank';
+                            link.textContent = source.title;
+                            link.className = 'source-link';
+
+                            li.appendChild(link);
+
+                            if (source.section) {
+                                const section = document.createElement('span');
+                                section.textContent = ` - ${source.section}`;
+                                section.className = 'text-muted';
+                                li.appendChild(section);
+                            }
+
+                            const confidence = document.createElement('small');
+                            confidence.textContent = ` (${source.confidence})`;
+                            confidence.className = 'text-muted';
+                            li.appendChild(confidence);
+
+                            sourcesList.appendChild(li);
+                        });
+                        document.getElementById('sourcesSection').style.display = 'block';
+                    } else {
+                        document.getElementById('sourcesSection').style.display = 'none';
+                    }
+
+                    answerCard.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                // Re-enable button and hide spinner
+                button.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        });
+    </script>
+</body>
+</html>
