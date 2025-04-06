@@ -1,0 +1,1 @@
+pip install requests beautifulsoup4 faiss-cpu sentence-transformers rich pytest responses numpy
