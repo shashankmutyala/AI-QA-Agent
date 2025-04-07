@@ -20,7 +20,7 @@ AI-QA-Agent is a smart question-answering system designed to extract and answer 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/AI-QA-Agent.git
+git clone https://github.com/shashankmutyala/AI-QA-Agent.git
 cd AI-QA-Agent
 ```
 
